@@ -32,7 +32,29 @@ class Solution:
             Homography from source to destination, 3x3 numpy array.
         """
         # return homography
-        """INSERT YOUR CODE HERE"""
+        N = match_p_src.shape[1]
+        u = match_p_dst[0, :]
+        v = match_p_dst[1, :]
+
+        # Transformation of the source cords to homogeneous coordinates
+        xy_hom = np.transpose(np.vstack([match_p_src, np.ones(N)]))
+
+        u_xy_hom = np.multiply(np.transpose(np.array([u, ] * 3)), xy_hom)
+        v_xy_hom = np.multiply(np.transpose(np.array([v, ] * 3)), xy_hom)
+        A_u_mat = np.concatenate((-xy_hom, np.zeros((N, 3)), u_xy_hom), axis=1)
+        A_v_mat = np.concatenate((np.zeros((N, 3)), -xy_hom, v_xy_hom), axis=1)
+        A_u_doubled = np.zeros((2 * N, 9))
+        A_v_doubled = np.zeros((2 * N, 9))
+        A_mat = np.zeros((2 * N, 9))
+        for i in range(0, N):
+            A_mat[2 * i] = A_u_mat[i]
+            A_mat[2 * i + 1] = A_v_mat[i]
+        A_svd_mat = np.dot(np.transpose(A_mat), A_mat)
+        _, eig_v = np.linalg.eigh(A_svd_mat)
+        H_mat = eig_v[:, 0]
+        H_mat = np.reshape(H_mat, (3, 3))
+        # H_mat = H_mat / np.max(np.abs(H_mat))
+        return H_mat
         pass
 
     @staticmethod
@@ -59,7 +81,27 @@ class Solution:
             The forward homography of the source image to its destination.
         """
         # return new_image
-        """INSERT YOUR CODE HERE"""
+        image_for_calc = np.asarray(src_image[:, :, 1])
+        y_vect, x_vect = np.where(image_for_calc!=None)
+        x_vect = np.asarray(x_vect)
+        y_vect = np.asarray(y_vect)
+        x_vect = x_vect.T
+        y_vect = y_vect.T
+        src_ind = np.vstack((x_vect, y_vect,np.ones(x_vect.shape[0])))
+        src2dest_ind_raw = homography @ src_ind
+        src2dest_ind_raw = src2dest_ind_raw/src2dest_ind_raw[2,:]
+        src2dest_ind_raw = src2dest_ind_raw[0:2,:]
+        src2dest_ind_raw = src2dest_ind_raw.round()
+        src2dest_ind_raw = src2dest_ind_raw.astype(int)
+        src2dest_image = (np.zeros(dst_image_shape)).astype(np.uint8)
+        src_ind = src_ind.astype(int)
+        for i_pixel in range(src2dest_ind_raw.shape[1]):
+           if (src2dest_ind_raw[0,i_pixel]< dst_image_shape[1]) & (src2dest_ind_raw[1,i_pixel]< dst_image_shape[0]) & (src2dest_ind_raw[0,i_pixel]>=0) & (src2dest_ind_raw[1,i_pixel]>=0):
+               src2dest_image[src2dest_ind_raw[1,i_pixel],src2dest_ind_raw[0,i_pixel],:] = src_image[src_ind[1,i_pixel],src_ind[0,i_pixel],:]
+
+               # print(src_image[src_ind[1,i_pixel],src_ind[0,i_pixel],:])
+               # print(src2dest_image[src2dest_ind_raw[1,i_pixel],src2dest_ind_raw[0,i_pixel],:])
+        return src2dest_image
         pass
 
     @staticmethod
@@ -347,5 +389,37 @@ class Solution:
 
         """
         # return np.clip(img_panorama, 0, 255).astype(np.uint8)
-        """INSERT YOUR CODE HERE"""
+        H_ransac = compute_homography(mp_src, mp_dst, inliers_percent, max_err)
+        """forward mapping to src image"""
+        src_img_np = np.asarray(img_src)
+        dst_img_np = np.asarray(img_dst)
+
+        dst_shp_y, dst_shp_x, __ = img_dst.shape
+
+        back_map_img = Backward_Mapping(H_ransac, img_src)
+        y_back_shp, x_back_shp, __ = back_map_img.shape
+
+        # calculate offsets
+        src_img_np = np.asarray(img_src)
+        x1, x2, y1, y2 = get_corner_indx(src_img_np, H_ransac)
+        # orig_ind, target_ind = get_all_image_indices(H_ransac, img_src)
+
+        # target_ind = forward_mapping(H, orig_ind)
+
+        x_offset = np.abs(np.min([x1, x2, 0])).astype(int)  # calculate the offset on x axis
+        y_offset = np.abs(np.min([y1, y2, 0])).astype(int)  # calculate the offset on x axis
+
+        # set panorama image size
+        y_pan = np.max([dst_shp_y + y_offset, y_back_shp])
+        x_pan = np.max([dst_shp_x + x_offset, x_back_shp])
+        img_pan = np.zeros((y_pan, x_pan, 3))
+
+        # insert the source image after homographic transform
+        img_pan[:y_back_shp, :x_back_shp] = back_map_img
+
+        # insert the destination image
+        img_pan[y_offset:dst_shp_y + y_offset, x_offset:dst_shp_x + x_offset] = img_dst
+        img_pan = img_pan.astype(np.uint8)
+
+        return img_pan
         pass
