@@ -132,7 +132,34 @@ class Solution:
             The forward homography of the source image to its destination.
         """
         # return new_image
-        """INSERT YOUR CODE HERE"""
+        x_vect = np.linspace(0, src_image.shape[1]-1, src_image.shape[1]).astype(int)
+        y_vect = np.linspace(0, src_image.shape[0]-1, src_image.shape[0]).astype(int)
+        x_mesh, y_mesh = np.meshgrid(x_vect,y_vect)
+        x_reshaped = np.reshape(x_mesh,[src_image.shape[0]*src_image.shape[1], 1]).T
+        y_reshaped = np.reshape(y_mesh, [src_image.shape[0] * src_image.shape[1], 1]).T
+        color_mesh = np.reshape(src_image, [src_image.shape[0] * src_image.shape[1], 3]).T
+
+        src_ind = np.vstack((x_reshaped, y_reshaped, np.ones(x_reshaped.shape[1])))
+        src2dest_ind_raw = homography @ src_ind
+        src2dest_ind_raw = src2dest_ind_raw/src2dest_ind_raw[2,:]
+        src2dest_ind_raw = src2dest_ind_raw[0:2,:]
+        src2dest_ind_raw = src2dest_ind_raw.round()
+        src2dest_ind_raw = src2dest_ind_raw.astype(int)
+
+        src2dest_image = (np.zeros(dst_image_shape)).astype(np.uint8)
+        relevant_ind = src2dest_ind_raw >= 0
+        relevant_ind[0, :] = relevant_ind[0, :] & (src2dest_ind_raw[0, :] < dst_image_shape[1])
+        relevant_ind[1, :] = relevant_ind[1, :] & (src2dest_ind_raw[1, :] < dst_image_shape[0])
+        relevant_ind = relevant_ind[0, :] & relevant_ind[1, :]
+        src2dest_ind_filt = (src2dest_ind_raw[:, relevant_ind]).astype(int)
+        mat_ind = np.repeat(relevant_ind, 3)
+        mat_ind = np.reshape(mat_ind.T, [3, relevant_ind.shape[0]])
+        src2dest_image[src2dest_ind_filt[1, :], src2dest_ind_filt[0, :],:] = color_mesh[:,relevant_ind].T
+
+
+        return src2dest_image
+
+
         pass
 
     @staticmethod
@@ -161,7 +188,25 @@ class Solution:
             return dist_mse = 10 ** 9.
         """
         # return fit_percent, dist_mse
-        """INSERT YOUR CODE HERE"""
+        hom_match_src = np.vstack((match_p_src, np.ones(match_p_src.shape[1]))).astype(int)
+        hom_match_dest = np.vstack((match_p_dst, np.ones(match_p_dst.shape[1]))).astype(int)
+
+        hom_trans_src = homography @ hom_match_src
+        hom_trans_src = hom_trans_src/hom_trans_src[2]
+
+        inliers_inx = []
+        norms_vect  = []
+        for point_inx in range(len(hom_match_dest[1])):
+            curr_point_norm = np.linalg.norm(hom_match_dest[:,point_inx] - hom_trans_src[:,point_inx])
+            if curr_point_norm < max_err:
+                inliers_inx.append(point_inx)
+                norms_vect.append(curr_point_norm)
+        if not inliers_inx:
+            dist_mse = 10 ** 9
+        else:
+            dist_mse = np.mean(norms_vect)
+        fit_percent = len(inliers_inx)/match_p_src.shape[1]
+        return fit_percent, dist_mse
         pass
 
     @staticmethod

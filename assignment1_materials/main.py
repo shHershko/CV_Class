@@ -50,7 +50,7 @@ def main():
     # Compute naive homography
     tt = time.time()
     naive_homography = solution.compute_homography_naive(match_p_src,
-                                                         match_p_dst)
+                                                        match_p_dst)
     print('Naive Homography {:5.4f} sec'.format(toc(tt)))
     print(naive_homography)
 
@@ -58,8 +58,8 @@ def main():
     tt = time.time()
     transformed_image = solution.compute_forward_homography_slow(
         homography=naive_homography,
-        src_image=src_img,
-        dst_image_shape=dst_img.shape)
+       src_image=src_img,
+       dst_image_shape=dst_img.shape)
 
     print('Naive Homography Slow computation takes {:5.4f} sec'.format(toc(tt)))
     plt.figure()
