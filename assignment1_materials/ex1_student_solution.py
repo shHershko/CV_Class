@@ -188,16 +188,15 @@ class Solution:
             return dist_mse = 10 ** 9.
         """
         # return fit_percent, dist_mse
-        hom_match_src = np.vstack((match_p_src, np.ones(match_p_src.shape[1]))).astype(int)
-        hom_match_dest = np.vstack((match_p_dst, np.ones(match_p_dst.shape[1]))).astype(int)
-
-        hom_trans_src = homography @ hom_match_src
+        match_src_mat = np.vstack((match_p_src, np.ones(match_p_src.shape[1]))).astype(int)
+        match_dest_mat = np.vstack((match_p_dst, np.ones(match_p_dst.shape[1]))).astype(int)
+        hom_trans_src = homography @ match_src_mat
         hom_trans_src = hom_trans_src/hom_trans_src[2]
 
         inliers_inx = []
         norms_vect  = []
-        for point_inx in range(len(hom_match_dest[1])):
-            curr_point_norm = np.linalg.norm(hom_match_dest[:,point_inx] - hom_trans_src[:,point_inx])
+        for point_inx in range(len(match_dest_mat[1])):
+            curr_point_norm = np.linalg.norm(match_dest_mat[:,point_inx] - hom_trans_src[:,point_inx])
             if curr_point_norm < max_err:
                 inliers_inx.append(point_inx)
                 norms_vect.append(curr_point_norm)
@@ -235,7 +234,20 @@ class Solution:
             image (shape 2xD; D as above).
         """
         # return mp_src_meets_model, mp_dst_meets_model
-        """INSERT YOUR CODE HERE"""
+        match_src_mat = np.vstack((match_p_src, np.ones(match_p_src.shape[1]))).astype(int)
+        match_dest_mat = np.vstack((match_p_dst, np.ones(match_p_dst.shape[1]))).astype(int)
+        hom_trans_src = homography @ match_src_mat
+        hom_trans_src = hom_trans_src/hom_trans_src[2]
+
+        inliers_inx = []
+        for point_inx in range(len(match_dest_mat[1])):
+            curr_point_norm = np.linalg.norm(match_dest_mat[:,point_inx] - hom_trans_src[:,point_inx])
+            if curr_point_norm < max_err:
+                inliers_inx.append(point_inx)
+            match_src_comp = match_p_src[:, inliers_inx]
+            match_dest_comp = match_p_dst[:, inliers_inx]
+        return match_src_comp, match_dest_comp
+
         pass
 
     def compute_homography(self,
@@ -256,19 +268,35 @@ class Solution:
         Returns:
             homography: Projective transformation matrix from src to dst.
         """
-        # # use class notations:
-        # w = inliers_percent
-        # # t = max_err
-        # # p = parameter determining the probability of the algorithm to
-        # # succeed
-        # p = 0.99
-        # # the minimal probability of points which meets with the model
-        # d = 0.5
-        # # number of points sufficient to compute the model
-        # n = 4
-        # # number of RANSAC iterations (+1 to avoid the case where w=1)
-        # k = int(np.ceil(np.log(1 - p) / np.log(1 - w ** n))) + 1
-        # return homography
+        # use class notations:
+        w = inliers_percent
+        # t = max_err
+        # p = parameter determining the probability of the algorithm to
+        # succeed
+        p = 0.99
+        # the minimal probability of points which meets with the model
+        d = 0.5
+        # number of points sufficient to compute the model
+        n = 4
+        # number of RANSAC iterations (+1 to avoid the case where w=1)
+        k = int(np.ceil(np.log(1 - p) / np.log(1 - w ** n))) + 1
+        curr_best_mse = 10**10 # Only for initial value or no equal points
+        iters_factor = 5
+        n_comp_points = 6
+        for iter_inx in range(iters_factor * k):
+            chosen_points_inx = sample(range(match_p_dst.shape[1]), n_comp_points)
+            curr_homography = Solution.compute_homography_naive(match_p_src[:, chosen_points_inx], match_p_dst[:, chosen_points_inx])
+            curr_src_mm, curr_dest_mm = Solution.meet_the_model_points(curr_homography, match_p_src, match_p_dst, max_err)
+            fit_percent, dist_mse = Solution.test_homography(curr_homography, match_p_src, match_p_dst, max_err)
+
+            if fit_percent >= inliers_percent:
+                curr_homography = Solution.compute_homography_naive(curr_src_mm, curr_dest_mm)
+                fit_percent, dist_mse = Solution.test_homography(curr_homography, match_p_src, match_p_dst, max_err)
+                if dist_mse < curr_best_mse:
+                    homography = curr_homography
+                    curr_best_mse = dist_mse
+
+        return homography
         """INSERT YOUR CODE HERE"""
         pass
 
