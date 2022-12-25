@@ -462,37 +462,5 @@ class Solution:
 
         """
         # return np.clip(img_panorama, 0, 255).astype(np.uint8)
-        H_ransac = compute_homography(mp_src, mp_dst, inliers_percent, max_err)
-        """forward mapping to src image"""
-        src_img_np = np.asarray(img_src)
-        dst_img_np = np.asarray(img_dst)
-
-        dst_shp_y, dst_shp_x, __ = img_dst.shape
-
-        back_map_img = Backward_Mapping(H_ransac, img_src)
-        y_back_shp, x_back_shp, __ = back_map_img.shape
-
-        # calculate offsets
-        src_img_np = np.asarray(img_src)
-        x1, x2, y1, y2 = get_corner_indx(src_img_np, H_ransac)
-        # orig_ind, target_ind = get_all_image_indices(H_ransac, img_src)
-
-        # target_ind = forward_mapping(H, orig_ind)
-
-        x_offset = np.abs(np.min([x1, x2, 0])).astype(int)  # calculate the offset on x axis
-        y_offset = np.abs(np.min([y1, y2, 0])).astype(int)  # calculate the offset on x axis
-
-        # set panorama image size
-        y_pan = np.max([dst_shp_y + y_offset, y_back_shp])
-        x_pan = np.max([dst_shp_x + x_offset, x_back_shp])
-        img_pan = np.zeros((y_pan, x_pan, 3))
-
-        # insert the source image after homographic transform
-        img_pan[:y_back_shp, :x_back_shp] = back_map_img
-
-        # insert the destination image
-        img_pan[y_offset:dst_shp_y + y_offset, x_offset:dst_shp_x + x_offset] = img_dst
-        img_pan = img_pan.astype(np.uint8)
-
-        return img_pan
+        """INSERT YOUR CODE HERE"""
         pass
