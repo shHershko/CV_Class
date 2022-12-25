@@ -297,7 +297,6 @@ class Solution:
                     curr_best_mse = dist_mse
 
         return homography
-        """INSERT YOUR CODE HERE"""
         pass
 
     @staticmethod
@@ -327,7 +326,25 @@ class Solution:
         """
 
         # return backward_warp
-        """INSERT YOUR CODE HERE"""
+        src_H, src_W = src_image.shape[0], src_image.shape[1]
+        dest_H, dest_W = dst_image_shape[0], dst_image_shape[1]
+
+        src_hom = np.indices((src_H, src_W)).reshape(2, -1)
+        src_hom = np.vstack((src_hom, np.ones(src_hom.shape[1]))).astype(int)
+        src_hom[[0, 1]] = src_hom[[1, 0]]
+        dest_hom = np.indices((dest_H, dest_W)).reshape(2, -1)
+        dest_hom = np.vstack((dest_hom, np.ones(dest_hom.shape[1]))).astype(int)
+        dest_hom[[0, 1]] = dest_hom[[1, 0]]
+
+        trans_points = backward_projective_homography @ dest_hom
+        trans_points = (trans_points/trans_points[2]).astype(int)
+
+        bwd_img = griddata((src_hom[0], src_hom[1]), src_image[src_hom[1], src_hom[0], :], (trans_points[0,:], trans_points[1,:]), method='cubic')
+        bwd_img = bwd_img.reshape(dst_image_shape)
+
+        return bwd_img
+        
+
         pass
 
     @staticmethod
@@ -419,7 +436,13 @@ class Solution:
             translation.
         """
         # return final_homography
-        """INSERT YOUR CODE HERE"""
+        back_trans_mat = [[1, 0, -pad_left],
+                          [0, 1, -pad_up],
+                          [0, 0, 1]]
+        transed_hom = backward_homography @ back_trans_mat
+        new_back_hom = transed_hom/np.linalg.norm(transed_hom)
+        return new_back_hom
+
         pass
 
     def panorama(self,
@@ -462,5 +485,15 @@ class Solution:
 
         """
         # return np.clip(img_panorama, 0, 255).astype(np.uint8)
-        """INSERT YOUR CODE HERE"""
+        fwd_hom = Solution.compute_homography(self, match_p_src, match_p_dst, inliers_percent, max_err)
+        bwd_hom = np.linalg.inv(fwd_hom)
+        pa_rows, pa_cols, pa_pads = Solution.find_panorama_shape(src_image, dst_image, fwd_hom)
+        trans_hom = Solution.add_translation_to_backward_homography(bwd_hom, pa_pads.pad_left, pa_pads.pad_up)
+        bwd_image = Solution.compute_backward_mapping(trans_hom, src_image, (pa_rows, pa_cols, 3))
+
+        panorama = np.zeros((pa_rows, pa_cols, 3))
+        panorama[:bwd_image.shape[0], :bwd_image.shape[1]] = bwd_image
+        panorama[pa_pads.pad_up:pa_pads.pad_up+dst_image.shape[0], pa_pads.pad_left:pa_pads.pad_left+dst_image.shape[1], :] = dst_image
+
+        return panorama.astype(np.uint8)
         pass
