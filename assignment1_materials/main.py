@@ -12,8 +12,8 @@ from ex1_student_solution import Solution
 ##########################################################
 # Don't forget to fill in your IDs!!!
 # students' IDs:
-ID1 = '123456789'
-ID2 = '987654321'
+ID1 = '305015596'
+ID2 = '305218349'
 ##########################################################
 
 
@@ -131,7 +131,6 @@ def main():
                                                      max_err)
     print('RANSAC Homography Test {:5.4f} sec'.format(toc(tt)))
     print([fit_percent, dist_mse])
-
     # Build panorama
     tt = tic()
     img_pan = solution.panorama(src_img,
@@ -146,7 +145,6 @@ def main():
     plt.figure()
     course_panorama_plot = plt.imshow(img_pan)
     plt.title('Great Panorama')
-    # plt.show()
     plt.show()
 
 
@@ -179,7 +177,7 @@ def your_images_main():
     # Student Files
     # first run "create_matching_points.py" with your own images to create a mat
     # file with the matching coordinates.
-    max_err = 25  # <<<<< YOU MAY CHANGE THIS
+    max_err = 15  # <<<<< YOU MAY CHANGE THIS
     inliers_percent = 0.8  # <<<<< YOU MAY CHANGE THIS
 
     src_img_test, dst_img_test, match_p_src, match_p_dst = your_images_loader()
