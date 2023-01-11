@@ -32,7 +32,9 @@ class Solution:
         ssdd_tensor = np.zeros((num_of_rows,
                                 num_of_cols,
                                 len(disparity_values)))
-        """INSERT YOUR CODE HERE"""
+        padding = int(win_size//2)
+        padded_left = np.pad(left_image,((padding, padding), (dsp_range + padding, dsp_range + padding), (win_size, win_size)))
+        padded_right = np.pad(right_image,((padding,padding),(dsp_range+padding,dsp_range+padding),(win_size,win_size)))
         ssdd_tensor -= ssdd_tensor.min()
         ssdd_tensor /= ssdd_tensor.max()
         ssdd_tensor *= 255.0
