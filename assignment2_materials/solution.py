@@ -33,8 +33,14 @@ class Solution:
                                 num_of_cols,
                                 len(disparity_values)))
         padding = int(win_size//2)
-        padded_left = np.pad(left_image,((padding, padding), (dsp_range + padding, dsp_range + padding), (win_size, win_size)))
-        padded_right = np.pad(right_image,((padding,padding),(dsp_range+padding,dsp_range+padding),(win_size,win_size)))
+        padded_left = np.pad(left_image,((padding, padding), (dsp_range + padding, dsp_range + padding), (0, 0)),'constant', constant_values=(0))
+        padded_right = np.pad(right_image,((padding,padding),(dsp_range+padding,dsp_range+padding),(0,0)),'constant', constant_values=(0))
+        for i_row in np.arange(padding,num_of_rows+padding):
+            for i_col in np.arange(padding+dsp_range,padding+dsp_range+num_of_cols):
+                left_win = padded_left[i_row - padding: i_row + padding + 1, i_col - padding: i_col + padding + 1]
+                for dispa_inx, dispa in enumerate(disparity_values):
+                    right_win = padded_right[i_row-padding:i_row+padding+1,i_col+dispa-padding:i_col+dispa+padding+1]
+                    ssdd_tensor[i_row-padding, i_col-dsp_range-padding, dispa_inx] = np.sum((left_win-right_win)**2)
         ssdd_tensor -= ssdd_tensor.min()
         ssdd_tensor /= ssdd_tensor.max()
         ssdd_tensor *= 255.0
