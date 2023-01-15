@@ -64,7 +64,7 @@ class Solution:
         """
         # you can erase the label_no_smooth initialization.
         label_no_smooth = np.zeros((ssdd_tensor.shape[0], ssdd_tensor.shape[1]))
-        """INSERT YOUR CODE HERE"""
+        label_no_smooth = np.argmin(ssdd_tensor, 2)  # Inx of the minimum value along the disparity
         return label_no_smooth
 
     @staticmethod
@@ -85,7 +85,19 @@ class Solution:
         """
         num_labels, num_of_cols = c_slice.shape[0], c_slice.shape[1]
         l_slice = np.zeros((num_labels, num_of_cols))
-        """INSERT YOUR CODE HERE"""
+        l_slice[:, 0] = c_slice[:, 0]
+        mesh_inx = np.linspace(0, num_labels - 1, num_labels)
+        w_mat, h_mat = np.meshgrid(mesh_inx, mesh_inx)
+        labels_inx = np.abs(w_mat-h_mat)
+
+        for col_inx in range(1, num_of_cols):
+            M = np.array([l_slice[:, col_inx-1]] * num_labels) # a
+            M[labels_inx == 1] = M[labels_inx == 1] + p1 # b
+            M[labels_inx > 1] = M[labels_inx > 1] + p2 # c
+            M = np.min(M, axis=1)
+
+            l_slice[:, col_inx] = c_slice[:, col_inx] + M - np.min(l_slice[:, col_inx-1])
+
         return l_slice
 
     def dp_labeling(self,
@@ -110,8 +122,106 @@ class Solution:
             Dynamic Programming depth estimation matrix of shape HxW.
         """
         l = np.zeros_like(ssdd_tensor)
-        """INSERT YOUR CODE HERE"""
+        for i_row in range(ssdd_tensor.shape[0]):
+            ssdd_slice = ssdd_tensor[i_row, :, :].T
+            l[i_row, :, :] = (Solution.dp_grade_slice(ssdd_slice, p1, p2)).T
         return self.naive_labeling(l)
+
+    def slice_ext(ssd_tensor: np.ndarray, direction: int, iter: int) -> np.ndarray:
+        """extracts slices from the ssdd according to a direction which it recieves.
+
+        Args:
+            ssdd_tensor: A tensor of the sum of squared differences for every
+            pixel in a window of size win_size X win_size, for the
+            2*dsp_range + 1 possible disparity values.
+            direction: one of the 8 directions defined for the exercise (assume only 1-8!)
+            offset: the offset for the main direction (row, column or iter)
+        Returns:
+            the current slice from the ssdd tensor
+        """
+
+        if (direction == 1 or direction == 5):
+            ssdd_slice = ssd_tensor[iter, :, :]
+        elif (direction == 2 or direction == 6):
+            ssdd_slice = np.diagonal(ssd_tensor, iter)
+        elif (direction == 3 or direction == 7):
+            ssdd_slice = ssd_tensor[:, iter, :]
+        elif (direction == 4 or direction == 8):
+            ssdd_slice = np.diagonal(np.fliplr(ssd_tensor), iter)
+
+        if (direction <= 4):
+            return ssdd_slice
+        else:
+            return np.flipud(ssdd_slice)
+
+    def dp_grade_slice_dir(c_slice: np.ndarray, p1: float, p2: float,
+                               direction: int) -> np.ndarray:
+        """Calculate the scores matrix for slice c_slice.
+           this is dp_grade_slice updated  to support diagonal directions (slices of shorter lengths)
+        """
+        if (direction %2 ==0):  
+            return Solution.dp_grade_slice(c_slice.T, p1, p2).T   
+        else: # not diagonal 
+            return Solution.dp_grade_slice(c_slice, p1, p2)
+
+    def l_indices_update(ssdd_tensor: np.ndarray,
+            direction: int, indx: int, p1: float, p2: float):
+        return Solution.dp_grade_slice_dir(Solution.slice_ext(ssdd_tensor, direction, indx).T, p1, p2, direction).T
+
+    def dp_grade_per_direction(
+            ssdd_tensor: np.ndarray,
+            direction: int,
+            p1: float,
+            p2: float) -> np.ndarray:
+        """l scores tensor for a direction
+           each slice in direction corresponding l tensor
+
+        Args:
+            ssdd_tensor: A tensor of the sum of squared differences for
+            every pixel in a window of size win_size X win_size, for the
+            2*dsp_range + 1 possible disparity values.
+            direction: one of the 8 directions defined for the exercise (assume only 1-8!)
+            p1: penalty for taking disparity value with 1 offset.
+            p2: penalty for taking disparity value more than 2 offset.
+
+        Returns:
+            np.ndarray which maps each direction to the corresponding l score tensor
+        """
+        l = np.zeros_like(ssdd_tensor)
+        direction_to_slice = {}
+        num_rows, num_cols, num_dsp = ssdd_tensor.shape[0], ssdd_tensor.shape[1], ssdd_tensor.shape[2]
+        ssdd_indices = np.arange(num_rows * num_cols * num_dsp)
+        ssdd_indices = ssdd_indices.reshape((num_rows, num_cols, num_dsp))
+        # for each direction we want to extract indices and values of ssdd
+        # dp on them and assign to l according to the relevant indices
+        if (direction % 2 == 0):
+            for indx in range(-num_rows + 1, num_cols):
+                indices_slice = Solution.slice_ext(ssdd_indices, direction, indx)
+                indices = np.unravel_index(indices_slice, ssdd_tensor.shape)
+                l[indices] = Solution.l_indices_update(ssdd_tensor,direction,indx,p1,p2)
+
+        elif (direction == 1):
+            # indx = row
+            for indx in range(num_rows):
+                l[indx, :, :] = Solution.l_indices_update(ssdd_tensor,direction,indx,p1,p2)
+        elif (direction == 3):
+            # indx = col
+            for indx in range(num_cols):
+                l[:, indx, :] = Solution.l_indices_update(ssdd_tensor,direction,indx,p1,p2)
+
+        elif (direction == 5):
+            # indx = row
+            for indx in range(num_rows - 1, 0, -1):
+                indices_slice = Solution.slice_ext(ssdd_indices, direction, indx)
+                indices = np.unravel_index(indices_slice, ssdd_tensor.shape)
+                l[indices] = Solution.l_indices_update(ssdd_tensor,direction,indx,p1,p2)
+        else:
+            # indx = col
+            for indx in range(num_cols - 1, 0, -1):
+                indices_slice = Solution.slice_ext(ssdd_indices, direction, indx)
+                indices = np.unravel_index(indices_slice, ssdd_tensor.shape)
+                l[indices] =Solution.l_indices_update(ssdd_tensor,direction,indx,p1,p2)
+        return l
 
     def dp_labeling_per_direction(self,
                                   ssdd_tensor: np.ndarray,
@@ -144,7 +254,10 @@ class Solution:
         num_of_directions = 8
         l = np.zeros_like(ssdd_tensor)
         direction_to_slice = {}
-        """INSERT YOUR CODE HERE"""
+        for direction in range(1,num_of_directions+1):
+            l = Solution.dp_grade_per_direction(ssdd_tensor,direction,p1,p2)
+            direction_to_slice[direction] = Solution.naive_labeling(l)
+            l = np.zeros_like(ssdd_tensor)
         return direction_to_slice
 
     def sgm_labeling(self, ssdd_tensor: np.ndarray, p1: float, p2: float):
@@ -171,6 +284,8 @@ class Solution:
         """
         num_of_directions = 8
         l = np.zeros_like(ssdd_tensor)
-        """INSERT YOUR CODE HERE"""
+        for direction in range(1,num_of_directions+1):
+            l += Solution.dp_grade_per_direction(ssdd_tensor,direction,p1,p2)
+        l = l/num_of_directions # avg of all
         return self.naive_labeling(l)
 

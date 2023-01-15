@@ -105,7 +105,6 @@ def main():
     plt.subplot(1, 3, 3)
     plt.imshow(right_image)
     plt.title('Right Image')
-
     # Generate a dictionary which maps each direction to a label map:
     tt = tic()
     direction_to_vote = solution.dp_labeling_per_direction(ssdd, COST1, COST2)
