@@ -64,7 +64,7 @@ class Solution:
         """
         # you can erase the label_no_smooth initialization.
         label_no_smooth = np.zeros((ssdd_tensor.shape[0], ssdd_tensor.shape[1]))
-        label_no_smooth = np.argmin(ssdd_tensor, 2)  # Inx of the minimum value along the disparity
+        label_no_smooth = np.argmin(ssdd_tensor, axis=2)  # Inx of the minimum value along the disparity
         return label_no_smooth
 
     @staticmethod
