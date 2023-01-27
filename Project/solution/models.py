@@ -42,4 +42,22 @@ def get_xception_based_model() -> nn.Module:
     classification head stated in the exercise.
     """
     """INSERT YOUR CODE HERE, overrun return."""
-    return SimpleNet()
+
+    xception = build_xception_backbone(pretrained=True)
+    ## freeze grads here
+    for param in xception.parameters():
+        param.requires_grad = False
+    model = nn.Sequential(nn.Linear(2048,1000),
+                           nn.ReLU(),nn.Linear(1000,256),nn.ReLU(),
+                           nn.Linear(256,64),nn.ReLU(),nn.Linear(64,2))
+    xception.fc = model
+    return xception
+
+# def main():
+#     model = get_xception_based_model()
+#     from utils import get_nof_params
+#     print(get_nof_params(model))
+#
+# if __name__ == "__main__":
+#     main()
+

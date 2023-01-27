@@ -11,6 +11,9 @@ from torch.utils.data import DataLoader
 from common import FIGURES_DIR
 from utils import load_dataset, load_model
 
+from pytorch_grad_cam import GradCAM, ScoreCAM, GradCAMPlusPlus, AblationCAM, XGradCAM, EigenCAM, FullGrad
+from pytorch_grad_cam.utils.image import show_cam_on_image
+
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -27,13 +30,17 @@ def parse_args():
                         default='XceptionBased', type=str,
                         help='Model name: SimpleNet or XceptionBased.')
     parser.add_argument('--checkpoint_path', '-cpp',
-                        default='checkpoints/XceptionBased.pt', type=str,
+                        default='checkpoints/synthetic_dataset_XceptionBased_Adam.pt', type=str,
+                        #XceptionBased
                         help='Path to model checkpoint.')
     parser.add_argument('--dataset', '-d',
                         default='fakes_dataset', type=str,
                         help='Dataset: fakes_dataset or synthetic_dataset.')
 
     return parser.parse_args()
+
+def normalize(image):
+    return (image-image.min())/(image.max()-image.min())
 
 
 def get_grad_cam_visualization(test_dataset: torch.utils.data.Dataset,
@@ -52,7 +59,16 @@ def get_grad_cam_visualization(test_dataset: torch.utils.data.Dataset,
         of batch size 1, it's a tensor of shape (1,)).
     """
     """INSERT YOUR CODE HERE, overrun return."""
-    return np.random.rand(256, 256, 3), torch.randint(0, 2, (1,))
+    data_loader = DataLoader(test_dataset, batch_size=1, shuffle=True)
+    samples, true_labels = next(iter(data_loader))
+    target_layers= [model.conv3]
+    cam = GradCAM(model=model, target_layers=target_layers, use_cuda=torch.cuda.is_available())
+    gray_cam = cam(input_tensor= samples)
+    gray_cam = gray_cam[0, :]
+    img = normalize((samples[0]).permute(1,2,0).cpu().detach().numpy())
+    visualization = show_cam_on_image(img,gray_cam,use_rgb=True)
+    return visualization, true_labels
+    ##return np.random.rand(256, 256, 3), torch.randint(0, 2, (1,))
 
 
 def main():
@@ -64,7 +80,9 @@ def main():
     model_name = args.model
     model = load_model(model_name)
     model.load_state_dict(torch.load(args.checkpoint_path)['model'])
-
+    if model_name=='XceptionBased':
+        for param in model.parameters():
+            param.requires_grad = True
     model.eval()
     seen_labels = []
     while len(set(seen_labels)) != 2:

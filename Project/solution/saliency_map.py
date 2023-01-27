@@ -62,7 +62,25 @@ def compute_gradient_saliency_maps(samples: torch.tensor,
         shape Bx256x256 where B is the number of images in samples.
     """
     """INSERT YOUR CODE HERE, overrun return."""
-    return torch.rand(6, 256, 256)
+    ##    for param in xception.parameters():
+    ##   param.requires_grad = False
+    for param in model.parameters():
+        param.requires_grad = True
+    samples.requires_grad_()
+    forward_pass = model(samples)
+    rows_wanted = torch.ones_like(true_labels,dtype=torch.bool)
+    scores_correspond_to_labels = forward_pass[rows_wanted,true_labels]
+    for score in scores_correspond_to_labels:
+        score.backward(retain_graph=True)
+    #scores_correspond_to_labels.backward
+    # if samples.grad is None:
+    # 	images_grads = torch.zeros_like(samples)
+    # else:
+    images_grads = samples.grad.data
+    abs_images_grads = images_grads.abs()
+    saliency, _ = abs_images_grads.max(dim=1)
+
+    return saliency
 
 
 def main():  # pylint: disable=R0914, R0915
@@ -127,7 +145,7 @@ def main():  # pylint: disable=R0914, R0915
     # loop through the images in the test set and compute saliency map for
     # each image. Compute the average map of all real face image and
     # all fake face image images.
-    dataloader = DataLoader(test_dataset, batch_size=32, shuffle=True)
+    dataloader = DataLoader(test_dataset, batch_size=8, shuffle=True)
     real_images_saliency_maps = []
     fake_images_saliency_maps = []
 

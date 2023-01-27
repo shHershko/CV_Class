@@ -60,6 +60,8 @@ def main():
                                  lr=args.lr,
                                  momentum=args.momentum),
         'Adam': lambda: optim.Adam(model.parameters(), lr=args.lr),
+        
+        #'Adam': lambda: optim.Adam(filter(lambda p: p.requires_grad,model.parameters(), lr=args.lr))
     }
 
     optimizer_name = args.optimizer
@@ -99,4 +101,5 @@ def main():
 
 
 if __name__ == '__main__':
+
     main()

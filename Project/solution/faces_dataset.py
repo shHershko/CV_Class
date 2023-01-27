@@ -23,25 +23,31 @@ class FacesDataset(Dataset):
         self.fake_image_names = os.listdir(os.path.join(self.root_path, 'fake'))
         self.transform = transform
 
-    def __getitem__(self, index) -> tuple([torch.Tensor, int]):
+    def __getitem__(self, index) -> tuple[torch.Tensor, int]:
         """Get a sample and label from the dataset."""
-        if index < len(self.real_image_names):
-            folder = 'real'
-            img_name = self.real_image_names[index]
-            fake = 0
-        else :
-            folder = 'fake'
-            img_name = self.fake_image_names[index-len(self.real_image_names)]
-            fake = 1
+        """INSERT YOUR CODE HERE, overrun return."""
 
-        img_path = os.path.join(self.root_path, folder, img_name)
-        with Image.open(img_path) as im:
-            if self.transform is not None:
-                smp = self.transform(im)
-        return smp, fake
+        if index < (len(self.real_image_names)):
+            rel_phase = index
+            label = 0
+            image_path = os.path.join(self.root_path,'real',self.real_image_names[rel_phase])
+        else:
+            rel_phase = index - len(self.real_image_names)
+            label = 1
+            image_path = os.path.join(self.root_path,'fake',self.fake_image_names[rel_phase])
 
+        if self.transform:
+            sample = Image.open(image_path)
+            transformed_sample = self.transform(sample)
+        else:
+            transformed_sample = None
+        return (transformed_sample,label)
+        #return torch.rand((3, 256, 256)), int(torch.randint(0, 2, size=(1, )))
 
     def __len__(self):
         """Return the number of images in the dataset."""
-        return (len(self.real_image_names)+len(self.fake_image_names))
+        """INSERT YOUR CODE HERE, overrun return."""
 
+        res = len(self.fake_image_names) + len(self.real_image_names)
+        return res
+        #return 100

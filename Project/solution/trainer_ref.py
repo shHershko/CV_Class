@@ -62,18 +62,20 @@ class Trainer:
         for batch_idx, (inputs, targets) in enumerate(train_dataloader):
             """INSERT YOUR CODE HERE."""
             inputs, targets = inputs.to(device), targets.to(device)
-            
-            predict = self.model(inputs)
-            loss = self.criterion(predict,targets)
+            # Yarden and Ethan:
+            # Compute prediction and loss
 
-            # Backpropagation computing 
+            #loss_fn = nn.CrossEntropyLoss()
+            pred = self.model(inputs)
+            loss = self.criterion(pred,targets)
 
+            # Backpropagation
             self.optimizer.zero_grad()
             loss.backward()
             self.optimizer.step()
 
             total_loss += loss.item()
-            correct_labeled_samples += (predict.argmax(1) == targets).type(torch.float).sum().item()
+            correct_labeled_samples += (pred.argmax(1) == targets).type(torch.float).sum().item()
 
             nof_samples += self.batch_size
             avg_loss = total_loss/nof_samples
@@ -85,8 +87,10 @@ class Trainer:
                       f'Acc: {accuracy:.2f}[%] '
                       f'({correct_labeled_samples}/{nof_samples})')
 
+        # avg_loss = total_loss/len(train_dataloader)
+        # accuracy = correct_labeled_samples/len(train_dataloader.dataset)
+
         return avg_loss, accuracy
-        #nof_samples = len(train_dataloader)
 
     def evaluate_model_on_dataloader(
             self, dataset: torch.utils.data.Dataset) -> tuple[float, float]:
@@ -114,17 +118,15 @@ class Trainer:
             """INSERT YOUR CODE HERE."""
 
             inputs, targets = inputs.to(device), targets.to(device)
+            # YardebnaND Ethan
             with torch.no_grad():
-                predict = self.model(inputs)
-                total_loss += self.criterion(predict,targets).item()
-                correct_labeled_samples += (predict.argmax(1) == targets).type(torch.float).sum().item()
+                pred = self.model(inputs)
+                total_loss += self.criterion(pred,targets).item()
+                correct_labeled_samples += (pred.argmax(1) == targets).type(torch.float).sum().item()
 
                 nof_samples += self.batch_size
                 avg_loss = total_loss / nof_samples
                 accuracy = correct_labeled_samples / nof_samples
-
-                #nof_samples = len(train_dataloader)
-                #avg_loss and accuracy computing as in train_one_epoch func
 
             if batch_idx % print_every == 0 or batch_idx == len(dataloader) - 1:
                 print(f'Epoch [{self.epoch:03d}] | Loss: {avg_loss:.3f} | '
