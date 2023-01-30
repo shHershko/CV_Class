@@ -1,0 +1,6 @@
+*.png
+*.zip
+*.pt
+Project/solution/venv/
+*.pyc
+*.pdf

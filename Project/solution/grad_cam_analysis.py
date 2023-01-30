@@ -58,17 +58,15 @@ def get_grad_cam_visualization(test_dataset: torch.utils.data.Dataset,
         the true label of that sample (since it is an output of a DataLoader
         of batch size 1, it's a tensor of shape (1,)).
     """
-    """INSERT YOUR CODE HERE, overrun return."""
+    layers = [model.conv3]
     data_loader = DataLoader(test_dataset, batch_size=1, shuffle=True)
     samples, true_labels = next(iter(data_loader))
-    target_layers= [model.conv3]
-    cam = GradCAM(model=model, target_layers=target_layers, use_cuda=torch.cuda.is_available())
-    gray_cam = cam(input_tensor= samples)
-    gray_cam = gray_cam[0, :]
-    img = normalize((samples[0]).permute(1,2,0).cpu().detach().numpy())
-    visualization = show_cam_on_image(img,gray_cam,use_rgb=True)
-    return visualization, true_labels
-    ##return np.random.rand(256, 256, 3), torch.randint(0, 2, (1,))
+    cam = GradCAM(model=model, target_layers=layers, use_cuda=torch.cuda.is_available())
+    grad_cam_res = cam(input_tensor= samples)
+    grad_cam_res = np.squeeze(grad_cam_res)
+    curr_img = normalize((samples[0]).permute(1,2,0).cpu().detach().numpy())
+    vis = show_cam_on_image(curr_img,grad_cam_res,use_rgb=True)
+    return vis, true_labels
 
 
 def main():

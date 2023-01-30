@@ -60,7 +60,6 @@ class Trainer:
         print_every = int(len(train_dataloader) / 10)
 
         for batch_idx, (inputs, targets) in enumerate(train_dataloader):
-            """INSERT YOUR CODE HERE."""
             inputs, targets = inputs.to(device), targets.to(device)
             
             predict = self.model(inputs)
