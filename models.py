@@ -43,13 +43,15 @@ def get_xception_based_model() -> nn.Module:
     """
     """INSERT YOUR CODE HERE, overrun return."""
 
-    Xception = build_xception_backbone(pretrained=True)
-    for element in Xception.parameters():
-        element.requires_grad = False
-    
+    xception = build_xception_backbone(pretrained=True)
+    ## freeze grads here
+    for param in xception.parameters():
+        param.requires_grad = False
     model = nn.Sequential(nn.Linear(2048,1000),
                            nn.ReLU(),nn.Linear(1000,256),nn.ReLU(),
                            nn.Linear(256,64),nn.ReLU(),nn.Linear(64,2))
-    Xception.fc = model
-    return Xception
+    xception.fc = model
+    return xception
+
+
 
