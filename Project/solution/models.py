@@ -41,7 +41,6 @@ def get_xception_based_model() -> nn.Module:
     (2) Override `custom_network`'s fc attribute with the binary
     classification head stated in the exercise.
     """
-    """INSERT YOUR CODE HERE, overrun return."""
 
     xception = build_xception_backbone(pretrained=True)
     ## freeze grads here
@@ -52,6 +51,14 @@ def get_xception_based_model() -> nn.Module:
                            nn.Linear(256,64),nn.ReLU(),nn.Linear(64,2))
     xception.fc = model
     return xception
+
+def get_mobilenet_model() -> nn.Module:
+    """Return an get_MobileNet_model.
+
+    """
+    model = torch.hub.load('pytorch/vision:v0.10.0', 'mobilenet_v2', pretrained=True)
+
+    return model
 
 # def main():
 #     model = get_xception_based_model()

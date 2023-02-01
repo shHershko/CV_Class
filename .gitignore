@@ -4,3 +4,5 @@
 Project/solution/venv/
 *.pyc
 *.pdf
+Project/solution/figures/
+Project/solution/out/
