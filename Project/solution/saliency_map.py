@@ -25,10 +25,10 @@ def parse_args():
     """
     parser = argparse.ArgumentParser(description='Plot saliency maps.')
     parser.add_argument('--model', '-m',
-                        default='XceptionBased', type=str,
+                        default='SimpleNet', type=str,
                         help='Model name: SimpleNet or XceptionBased.')
     parser.add_argument('--checkpoint_path', '-cpp',
-                        default='checkpoints/XceptionBased.pt', type=str,
+                        default='checkpoints/fakes_dataset_SimpleNet_Adam.pt', type=str,
                         help='Path to model checkpoint.')
     parser.add_argument('--dataset', '-d',
                         default='fakes_dataset', type=str,
@@ -137,7 +137,7 @@ def main():  # pylint: disable=R0914, R0915
     # loop through the images in the test set and compute saliency map for
     # each image. Compute the average map of all real face image and
     # all fake face image images.
-    dataloader = DataLoader(test_dataset, batch_size=8, shuffle=True)
+    dataloader = DataLoader(test_dataset, batch_size=32, shuffle=True)
     real_images_saliency_maps = []
     fake_images_saliency_maps = []
 

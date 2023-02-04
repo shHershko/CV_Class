@@ -25,7 +25,6 @@ class FacesDataset(Dataset):
 
     def __getitem__(self, index) -> tuple[torch.Tensor, int]:
         """Get a sample and label from the dataset."""
-        """INSERT YOUR CODE HERE, overrun return."""
 
         if index < (len(self.real_image_names)):
             rel_phase = index
@@ -41,13 +40,10 @@ class FacesDataset(Dataset):
             transformed_sample = self.transform(sample)
         else:
             transformed_sample = None
-        return (transformed_sample,label)
-        #return torch.rand((3, 256, 256)), int(torch.randint(0, 2, size=(1, )))
+        return transformed_sample, label
 
     def __len__(self):
         """Return the number of images in the dataset."""
-        """INSERT YOUR CODE HERE, overrun return."""
 
         res = len(self.fake_image_names) + len(self.real_image_names)
         return res
-        #return 100
